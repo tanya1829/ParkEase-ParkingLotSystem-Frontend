@@ -44,9 +44,10 @@ const MyBookings = () => {
     try {
       const res = await bookingApi.put(`/bookings/${bookingId}/checkout`);
       const amount = res.data.data?.totalAmount;
+      const spotId = res.data.data?.spotId || 1;  // ← GET spotId FROM RESPONSE
       await notifApi.post(`/notifications/trigger/checkout?userId=${user.userId}&bookingId=${bookingId}&totalAmount=${amount}`);
       toast.success(`Checked out! Total: ₹${amount}`);
-      setPayModal({ bookingId, amount });
+      setPayModal({ bookingId, amount, spotId });  // ← INCLUDE spotId
       fetchBookings();
     } catch (err) { toast.error(err.response?.data?.message || 'Check-out failed.'); }
   };
@@ -63,18 +64,94 @@ const MyBookings = () => {
   const handlePayment = async () => {
     setPayLoading(true);
     try {
-      const res = await paymentApi.post('/payments', {
-        bookingId: payModal.bookingId,
-        userId: user.userId,
-        amount: payModal.amount,
-        mode: payMode,
-        description: `Parking fee for booking #${payModal.bookingId}`
-      });
-      await notifApi.post(`/notifications/trigger/payment?userId=${user.userId}&paymentId=${res.data.data.paymentId}&amount=${payModal.amount}&mode=${payMode}`);
-      toast.success(`Payment of ₹${payModal.amount} done via ${payMode}!`);
-      setPayModal(null);
-    } catch (err) { toast.error(err.response?.data?.message || 'Payment failed.'); }
-    finally { setPayLoading(false); }
+      if (payMode === 'CASH') {
+        // Cash payment — no Razorpay needed
+        const res = await paymentApi.post('/payments', {
+          bookingId: payModal.bookingId,
+          userId: user.userId,
+          amount: payModal.amount,
+          mode: 'CASH',
+          description: `Cash payment for booking #${payModal.bookingId}`
+        });
+        await notifApi.post(`/notifications/trigger/payment?userId=${user.userId}&paymentId=${res.data.data.paymentId}&amount=${payModal.amount}&mode=CASH`);
+        toast.success(`Cash payment of ₹${payModal.amount} recorded!`);
+        setPayModal(null);
+        fetchBookings();
+      } else {
+        // Online payment — use Razorpay
+
+        // Step 1: Create Razorpay order
+        const orderRes = await paymentApi.post('/payments/create-order', {
+          bookingId: payModal.bookingId,
+          userId: user.userId,
+          spotId: payModal.spotId || 1,  // ← ADD spotId HERE
+          amount: payModal.amount,
+          description: `Parking fee for booking #${payModal.bookingId}`
+        });
+
+        if (!orderRes.data.success) {
+          toast.error('Failed to create payment order.');
+          setPayLoading(false);
+          return;
+        }
+
+        const { orderId, keyId, amount } = orderRes.data.data;
+
+        // Step 2: Open Razorpay modal
+        const options = {
+          key: keyId,
+          amount: amount * 100,
+          currency: 'INR',
+          name: 'ParkEase',
+          description: `Parking fee for booking #${payModal.bookingId}`,
+          order_id: orderId,
+          handler: async (response) => {
+            try {
+              // Step 3: Verify payment signature
+              const verifyRes = await paymentApi.post('/payments/verify', {
+                bookingId: payModal.bookingId,
+                userId: user.userId,
+                amount: payModal.amount,
+                mode: payMode,
+                razorpayOrderId: response.razorpay_order_id,
+                razorpayPaymentId: response.razorpay_payment_id,
+                razorpaySignature: response.razorpay_signature
+              });
+
+              if (verifyRes.data.success) {
+                await notifApi.post(`/notifications/trigger/payment?userId=${user.userId}&paymentId=${verifyRes.data.data.paymentId}&amount=${payModal.amount}&mode=${payMode}`);
+                toast.success(`Payment of ₹${payModal.amount} successful! 🎉`);
+                setPayModal(null);
+                fetchBookings();
+              } else {
+                toast.error('Payment verification failed.');
+              }
+            } catch {
+              toast.error('Payment verification failed.');
+            } finally {
+              setPayLoading(false);
+            }
+          },
+          modal: {
+            ondismiss: () => {
+              toast.info('Payment cancelled.');
+              setPayLoading(false);
+            }
+          },
+          prefill: {
+            name: user?.fullName || '',
+            email: user?.email || ''
+          },
+          theme: { color: '#f5a623' }
+        };
+
+        const razorpay = new window.Razorpay(options);
+        razorpay.open();
+      }
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Payment failed.');
+      setPayLoading(false);
+    }
   };
 
   const activeCount = bookings.filter(b => b.status === 'ACTIVE' || b.status === 'RESERVED').length;
@@ -207,12 +284,34 @@ const MyBookings = () => {
                 </select>
               </div>
 
+              {payMode !== 'CASH' && (
+                <div style={{
+                  background: 'rgba(245,166,35,0.08)',
+                  border: '1px solid var(--amber-border)',
+                  borderRadius: 'var(--radius-sm)',
+                  padding: '10px 14px',
+                  marginBottom: 16,
+                  fontSize: '0.8125rem',
+                  color: 'var(--text-secondary)'
+                }}>
+                  🔒 You will be redirected to Razorpay secure payment gateway
+                </div>
+              )}
+
               <div style={{ display: 'flex', gap: 12, marginTop: 8 }}>
                 <button className="pe-btn pe-btn-ghost" style={{ flex: 1 }} onClick={() => setPayModal(null)}>
                   Later
                 </button>
-                <button className="pe-btn pe-btn-primary pe-btn-lg" style={{ flex: 2 }} onClick={handlePayment} disabled={payLoading}>
-                  {payLoading ? 'Processing…' : <><span>Pay Now</span><FaArrowRight size={14} /></>}
+                <button
+                  className="pe-btn pe-btn-primary pe-btn-lg"
+                  style={{ flex: 2 }}
+                  onClick={handlePayment}
+                  disabled={payLoading}
+                >
+                  {payLoading
+                    ? 'Processing…'
+                    : <><span>{payMode === 'CASH' ? 'Record Cash Payment' : 'Pay via Razorpay'}</span><FaArrowRight size={14} /></>
+                  }
                 </button>
               </div>
             </div>

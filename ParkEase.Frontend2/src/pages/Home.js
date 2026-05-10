@@ -31,7 +31,6 @@ const Home = () => {
           </div>
           Park<span style={{ color: 'var(--amber)' }}>Ease</span>
         </div>
-
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
           <Link to="/login" className="pe-btn pe-btn-ghost pe-btn-sm">Login</Link>
           <Link to="/register" className="pe-btn pe-btn-primary pe-btn-sm">Get Started</Link>
@@ -45,13 +44,10 @@ const Home = () => {
         textAlign: 'center', padding: '100px 24px 60px',
         position: 'relative', overflow: 'hidden',
       }}>
-        {/* Background glows */}
         <div style={{ position: 'absolute', top: '10%', left: '15%', width: 400, height: 400, borderRadius: '50%', background: 'radial-gradient(circle, rgba(245,166,35,0.08) 0%, transparent 70%)', pointerEvents: 'none' }} />
         <div style={{ position: 'absolute', bottom: '10%', right: '10%', width: 500, height: 500, borderRadius: '50%', background: 'radial-gradient(circle, rgba(59,130,246,0.06) 0%, transparent 70%)', pointerEvents: 'none' }} />
 
         <div style={{ maxWidth: 760, position: 'relative', zIndex: 1 }} className="pe-fade-up">
-
-          {/* Badge */}
           <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: 'var(--amber-glow)', border: '1px solid var(--amber-border)', borderRadius: 99, padding: '6px 16px', marginBottom: 28 }}>
             <FaBolt size={11} style={{ color: 'var(--amber)' }} />
             <span style={{ color: 'var(--amber)', fontSize: '0.8125rem', fontWeight: 600 }}>Smart Parking for Modern Cities</span>
@@ -80,7 +76,6 @@ const Home = () => {
             </Link>
           </div>
 
-          {/* Trust stats */}
           <div style={{ display: 'flex', gap: 40, justifyContent: 'center', marginTop: 56, flexWrap: 'wrap' }}>
             {[
               { value: '500+', label: 'Parking Lots' },
@@ -105,7 +100,6 @@ const Home = () => {
               Park in 3 Easy Steps
             </h2>
           </div>
-
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: 24 }}>
             {[
               { step: '01', icon: <FaSearch size={22} />, title: 'Search', desc: 'Enter your city and instantly see all available parking lots near you with real-time spot availability.' },
@@ -144,7 +138,6 @@ const Home = () => {
               Everything You Need
             </h2>
           </div>
-
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 20 }}>
             {[
               { icon: <FaBolt size={20} />, title: 'Real-Time Availability', desc: 'See live spot availability. No guesswork, no wasted trips.' },
@@ -207,8 +200,6 @@ const Home = () => {
                 Register as Manager <FaArrowRight size={13} />
               </Link>
             </div>
-
-            {/* Visual Card */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
               {[
                 { label: 'Total Revenue', value: '₹48,200', sub: 'This month', color: 'var(--green)' },
@@ -241,7 +232,6 @@ const Home = () => {
               Loved by Drivers
             </h2>
           </div>
-
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 20 }}>
             {[
               { name: 'Rahul M.', city: 'Delhi', text: 'Found parking near Connaught Place in under 2 minutes. Used to take 20 minutes of circling before!', stars: 5 },
@@ -290,10 +280,7 @@ const Home = () => {
             </p>
             <div style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap' }}>
               <Link to="/register" className="pe-btn pe-btn-primary pe-btn-lg">
-                Create Free Account <FaArrowRight size={14} />
-              </Link>
-              <Link to="/login" className="pe-btn pe-btn-outline pe-btn-lg">
-                Sign In
+                Get Started Free <FaArrowRight size={14} />
               </Link>
             </div>
           </div>
@@ -312,9 +299,8 @@ const Home = () => {
           <div style={{ color: 'var(--text-muted)', fontSize: '0.875rem' }}>
             © 2026 ParkEase. Smart parking for everyone.
           </div>
-          <div style={{ display: 'flex', gap: 12 }}>
-            <Link to="/login" className="pe-btn pe-btn-ghost pe-btn-sm">Login</Link>
-            <Link to="/register" className="pe-btn pe-btn-primary pe-btn-sm">Sign Up</Link>
+          <div style={{ color: 'var(--text-muted)', fontSize: '0.875rem' }}>
+            Made with ❤️ in India
           </div>
         </div>
       </footer>

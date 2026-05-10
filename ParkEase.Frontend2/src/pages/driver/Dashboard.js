@@ -4,7 +4,8 @@ import { Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { bookingApi, vehicleApi, notifApi } from '../../services/api';
 import Navbar from '../../components/Navbar';
-import { FaParking, FaCar, FaBell, FaHistory, FaSearch, FaMoneyBill } from 'react-icons/fa';
+import { FaParking, FaCar, FaBell, FaHistory, FaSearch, FaMoneyBill, FaChartBar } from 'react-icons/fa';
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from 'recharts';
 
 const statusMap = {
   RESERVED:  { cls: 'pe-badge-amber',  label: 'Reserved' },
@@ -13,10 +14,14 @@ const statusMap = {
   CANCELLED: { cls: 'pe-badge-red',    label: 'Cancelled' },
 };
 
+const COLORS = ['#fcb4d2', '#22C55E', '#3B82F6', '#EF4444'];
+
 const DriverDashboard = () => {
   const { user } = useAuth();
   const [stats, setStats] = useState({ bookings: 0, vehicles: 0, unread: 0, active: 0 });
   const [recentBookings, setRecentBookings] = useState([]);
+  const [chartData, setChartData] = useState([]);
+  const [pieData, setPieData] = useState([]);
 
   useEffect(() => { fetchStats(); }, []);
 
@@ -31,6 +36,20 @@ const DriverDashboard = () => {
       const active = bookings.filter(b => b.status === 'ACTIVE' || b.status === 'RESERVED').length;
       setStats({ bookings: bookings.length, vehicles: vehiclesRes.data.data?.length || 0, unread: notifRes.data.data || 0, active });
       setRecentBookings(bookings.slice(0, 5));
+
+      // Build monthly chart data
+      const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+      const monthlyCounts = Array(12).fill(0);
+      bookings.forEach(b => {
+        const m = new Date(b.startTime).getMonth();
+        monthlyCounts[m]++;
+      });
+      setChartData(months.map((m, i) => ({ month: m, bookings: monthlyCounts[i] })));
+
+      // Build status pie data
+      const statusCounts = { RESERVED: 0, ACTIVE: 0, COMPLETED: 0, CANCELLED: 0 };
+      bookings.forEach(b => { if (statusCounts[b.status] !== undefined) statusCounts[b.status]++; });
+      setPieData(Object.entries(statusCounts).filter(([,v]) => v > 0).map(([k, v]) => ({ name: k, value: v })));
     } catch {}
   };
 
@@ -48,6 +67,18 @@ const DriverDashboard = () => {
     { to: '/driver/payments',  icon: <FaMoneyBill />, label: 'Payments' },
   ];
 
+  const customTooltip = ({ active, payload, label }) => {
+    if (active && payload && payload.length) {
+      return (
+        <div style={{ background: '#1A1D27', border: '1px solid #222638', borderRadius: 8, padding: '10px 16px' }}>
+          <p style={{ color: '#fcb4d2', margin: 0, fontWeight: 700 }}>{label}</p>
+          <p style={{ color: '#F0F1F5', margin: 0 }}>{payload[0].value} bookings</p>
+        </div>
+      );
+    }
+    return null;
+  };
+
   return (
     <div className="pe-page">
       <Navbar />
@@ -60,7 +91,7 @@ const DriverDashboard = () => {
         </div>
 
         {/* Stats */}
-        <p className="pe-section-label pe-fade-up">Overview</p>
+        <p className="pe-section-label pe-fade-up">OVERVIEW</p>
         <div className="pe-grid pe-grid-4 mb-24">
           {statCards.map((s, i) => (
             <div key={i} className={`pe-stat-card pe-fade-up pe-fade-up-${i+1}`}>
@@ -74,7 +105,7 @@ const DriverDashboard = () => {
         </div>
 
         {/* Quick Actions */}
-        <p className="pe-section-label pe-fade-up">Quick Actions</p>
+        <p className="pe-section-label pe-fade-up">QUICK ACTIONS</p>
         <div className="pe-grid pe-grid-4 mb-32">
           {actions.map((a, i) => (
             <Link key={i} to={a.to} className={`pe-action-tile pe-fade-up pe-fade-up-${i+1}`}>
@@ -82,6 +113,52 @@ const DriverDashboard = () => {
               {a.label}
             </Link>
           ))}
+        </div>
+
+        {/* Charts Row */}
+        <p className="pe-section-label pe-fade-up"><FaChartBar style={{ marginRight: 6 }} />ANALYTICS</p>
+        <div className="pe-grid pe-grid-2 mb-32">
+
+          {/* Monthly Bookings Bar Chart */}
+          <div className="pe-card pe-fade-up">
+            <div className="pe-card-header">
+              <h3 className="pe-card-title">Monthly Bookings</h3>
+            </div>
+            <div style={{ padding: '20px 10px' }}>
+              <ResponsiveContainer width="100%" height={200}>
+                <BarChart data={chartData}>
+                  <XAxis dataKey="month" tick={{ fill: '#8B8FA8', fontSize: 11 }} axisLine={false} tickLine={false} />
+                  <YAxis tick={{ fill: '#8B8FA8', fontSize: 11 }} axisLine={false} tickLine={false} />
+                  <Tooltip content={customTooltip} />
+                  <Bar dataKey="bookings" fill="#fcb4d2" radius={[4, 4, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+
+          {/* Booking Status Pie Chart */}
+          <div className="pe-card pe-fade-up">
+            <div className="pe-card-header">
+              <h3 className="pe-card-title">Booking Status</h3>
+            </div>
+            <div style={{ padding: '20px 10px' }}>
+              {pieData.length > 0 ? (
+                <ResponsiveContainer width="100%" height={200}>
+                  <PieChart>
+                    <Pie data={pieData} cx="50%" cy="50%" innerRadius={50} outerRadius={80} dataKey="value" paddingAngle={3}>
+                      {pieData.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
+                    </Pie>
+                    <Tooltip contentStyle={{ background: '#1A1D27', border: '1px solid #222638', borderRadius: 8 }} />
+                    <Legend iconType="circle" wrapperStyle={{ fontSize: 12, color: '#8B8FA8' }} />
+                  </PieChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="pe-empty" style={{ height: 200 }}>
+                  <p className="pe-empty-text">No booking data yet</p>
+                </div>
+              )}
+            </div>
+          </div>
         </div>
 
         {/* Recent Bookings */}

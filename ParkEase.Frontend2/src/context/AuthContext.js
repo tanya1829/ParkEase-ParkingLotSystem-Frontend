@@ -5,13 +5,15 @@ import { authApi } from '../services/api';
 const AuthContext = createContext(null);
 
 export const AuthProvider = ({ children }) => {
-  const [user, setUser]     = useState(null);
-  const [token, setToken]   = useState(localStorage.getItem('token'));
-  const [loading, setLoading] = useState(false);
+  const [user, setUser]         = useState(null);
+  const [token, setToken]       = useState(localStorage.getItem('token'));
+  const [loading, setLoading]   = useState(false);
+  const [authReady, setAuthReady] = useState(false);
 
   useEffect(() => {
     const storedUser = localStorage.getItem('user');
     if (storedUser) setUser(JSON.parse(storedUser));
+    setAuthReady(true);
   }, []);
 
   const login = async (email, password) => {
@@ -54,11 +56,11 @@ export const AuthProvider = ({ children }) => {
     localStorage.clear();
     setUser(null);
     setToken(null);
-    window.location.href = '/login';
+    window.location.href = '/';
   };
 
   return (
-    <AuthContext.Provider value={{ user, token, loading, login, register, logout }}>
+    <AuthContext.Provider value={{ user, token, loading, authReady, login, register, logout }}>
       {children}
     </AuthContext.Provider>
   );
