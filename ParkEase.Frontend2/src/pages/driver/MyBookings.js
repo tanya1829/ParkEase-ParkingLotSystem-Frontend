@@ -6,6 +6,23 @@ import { useAuth } from '../../context/AuthContext';
 import Navbar from '../../components/Navbar';
 import { FaHistory, FaSignInAlt, FaSignOutAlt, FaTimes, FaArrowRight } from 'react-icons/fa';
 
+// ── Helper: send booking confirmation email after payment ──────────────────
+const sendPaymentConfirmationEmail = async (notifApiInstance, { userId, email, paymentId, bookingId, amount, mode }) => {
+  try {
+    await notifApiInstance.post('/notifications/trigger/payment-confirmation-email', {
+      userId,
+      email,
+      paymentId,
+      bookingId,
+      amount,
+      mode,
+    });
+  } catch (err) {
+    // Non-fatal — log only, don't block the UI
+    console.warn('⚠️ Could not send confirmation email:', err?.response?.data?.message || err.message);
+  }
+};
+
 const statusMap = {
   RESERVED:  { cls: 'pe-badge-amber',  label: 'Reserved' },
   ACTIVE:    { cls: 'pe-badge-green',  label: 'Active' },
@@ -74,7 +91,16 @@ const MyBookings = () => {
           description: `Cash payment for booking #${payModal.bookingId}`
         });
         await notifApi.post(`/notifications/trigger/payment?userId=${user.userId}&paymentId=${res.data.data.paymentId}&amount=${payModal.amount}&mode=CASH`);
-        toast.success(`Cash payment of ₹${payModal.amount} recorded!`);
+        // ── Send booking confirmation email ──
+        await sendPaymentConfirmationEmail(notifApi, {
+          userId: user.userId,
+          email: user.email,
+          paymentId: res.data.data.paymentId,
+          bookingId: payModal.bookingId,
+          amount: payModal.amount,
+          mode: 'CASH',
+        });
+        toast.success(`Cash payment of ₹${payModal.amount} recorded! Confirmation sent to ${user.email} ✉️`);
         setPayModal(null);
         fetchBookings();
       } else {
@@ -120,7 +146,16 @@ const MyBookings = () => {
 
               if (verifyRes.data.success) {
                 await notifApi.post(`/notifications/trigger/payment?userId=${user.userId}&paymentId=${verifyRes.data.data.paymentId}&amount=${payModal.amount}&mode=${payMode}`);
-                toast.success(`Payment of ₹${payModal.amount} successful! 🎉`);
+                // ── Send booking confirmation email ──
+                await sendPaymentConfirmationEmail(notifApi, {
+                  userId: user.userId,
+                  email: user.email,
+                  paymentId: verifyRes.data.data.paymentId,
+                  bookingId: payModal.bookingId,
+                  amount: payModal.amount,
+                  mode: payMode,
+                });
+                toast.success(`Payment of ₹${payModal.amount} successful! Confirmation sent to ${user.email} 🎉✉️`);
                 setPayModal(null);
                 fetchBookings();
               } else {

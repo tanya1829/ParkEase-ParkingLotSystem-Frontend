@@ -4,13 +4,13 @@
 import axios from 'axios';
 
 // ── Service Base URLs ──────────────────────────────
-const AUTH_URL      = 'http://localhost:5000/api/v1';
-const LOT_URL       = 'http://localhost:5002/api/v1';
-const SPOT_URL      = 'http://localhost:5003/api/v1';
-const VEHICLE_URL   = 'http://localhost:5004/api/v1';
-const BOOKING_URL   = 'http://localhost:5005/api/v1';
-const PAYMENT_URL   = 'http://localhost:5006/api/v1';
-const NOTIF_URL     = 'http://localhost:5007/api/v1';
+const AUTH_URL      = 'https://parkease-parkinglotsystem-backend.onrender.com/api/v1';
+const LOT_URL       = 'https://parkease-lot-service.onrender.com/api/v1';
+const SPOT_URL      = 'https://parkease-spot-service.onrender.com/api/v1';
+const VEHICLE_URL   = 'https://parkease-vehicle-service.onrender.com/api/v1';
+const BOOKING_URL   = 'https://parkease-booking-service-069p.onrender.com/api/v1';
+const PAYMENT_URL   = 'https://parkease-payment-service-q2z3.onrender.com/api/v1';
+const NOTIF_URL     = 'https://parkease-notif-service.onrender.com/api/v1';
 
 // ── Axios instance with JWT interceptor ───────────
 const createApi = (baseURL) => {
